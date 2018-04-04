@@ -1,0 +1,23 @@
+{
+  "name": "proxiedAddress",
+  "version": "1.0.0",
+  "description": "[![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/florianlenz/proxiedAddress.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/florianlenz/proxiedAddress/issues"
+  },
+  "homepage": "https://github.com/florianlenz/proxiedAddress#readme"
+}
