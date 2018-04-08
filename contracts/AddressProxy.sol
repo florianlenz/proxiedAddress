@@ -27,12 +27,8 @@ contract AddressProxy {
         locked = false;
     }
 
-    function () external payable {
-
-    }
-
-    function exec(address location, bytes data) external auth() unlocked() returns(bool) {
-        require(location.call(data));
+    function exec(address location, bytes data) payable external auth() unlocked() returns(bool) {
+        require(location.call.value(msg.value)(data));
         return true;
     }
 
@@ -44,12 +40,12 @@ contract AddressProxy {
         locked = false;
     }
 
-    function changeUser(address _newOwnerAddress) external onlyRecovery() {
+    function changeOwner(address _newOwnerAddress) external onlyRecovery() {
         ownerAddress = _newOwnerAddress;
     }
 
-    function changeRecoveryAddressAndUnlock(address _newRecoveryAddress) external onlyRecovery() {
-        recoveryAddress = _newRecoveryAddress;
+    function changeRecovery(address _recoveryAddress) external onlyRecovery() {
+        recoveryAddress = _recoveryAddress;
     }
 
 }

@@ -156,6 +156,207 @@ contract('AddressProxy - exec', function (accounts) {
 
 });
 
+contract('AddressProxy - unlock', function (accounts) {
+
+    it('should not be callable by owner', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                await instance.lock();
+
+                try {
+                    await instance.unlock({from: owner})
+                }catch (e){
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since the unlock function can't be called by the owner");
+
+            })
+    });
+
+    it('should be callable by recoveryAddress', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                await instance.lock();
+
+                assert.isTrue(await instance.locked());
+
+                await instance.unlock({from: recoveryAddress});
+
+                assert.isFalse(await instance.locked());
+
+            })
+    });
+
+    it('should not be callable by random address', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const randomAddress = accounts[4];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                await instance.lock();
+
+                try {
+                    await instance.unlock({from: randomAddress})
+                }catch (e){
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since the unlock function can't be called by a random address");
+
+            })
+    });
+
+});
+
+contract('AddressProxy - changeOwner', function (accounts) {
+
+    it('should not be callable by owner', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newOwner = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                try {
+                    await instance.changeOwner(newOwner, {from: owner});
+                }catch(e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since changeOwner should only be callable by the recovery address");
+
+            })
+    });
+
+    it('should be callable by recovery Address', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newOwner = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                await instance.changeOwner(newOwner, {from: recoveryAddress});
+
+                assert.equal(newOwner, await instance.ownerAddress());
+                assert.equal(recoveryAddress, await instance.recoveryAddress())
+
+            })
+    });
+
+    it('should not be callable by random address', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newOwner = accounts[2];
+        const randomAddress = accounts[7];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                try {
+                    await instance.changeOwner(newOwner, {from: randomAddress});
+                }catch(e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since changeUser should only be callable by the recovery address");
+
+            })
+    });
+
+});
+
+contract('AddressProxy - changeRecovery', function (accounts) {
+
+    it('should not be callable by owner', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newRecoveryAddress = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                try {
+                    await instance.changeRecovery(newRecoveryAddress, {from: owner})
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since the owner can't change the recovery address");
+
+            })
+    });
+
+    it('should be callable by recoveryAddress', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newRecoveryAddress = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                //Ensure the current recovery address is ok
+                assert.equal(recoveryAddress, await instance.recoveryAddress());
+
+                //Change the recovery address
+                await instance.changeRecovery(newRecoveryAddress, {from: recoveryAddress});
+
+                //check if the recovery address was really changed
+                assert.equal(newRecoveryAddress, await instance.recoveryAddress());
+
+            })
+    });
+
+    it('should not be callable by randomAddress', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const newRecoveryAddress = accounts[2];
+        const randomAddress = accounts[8];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                try {
+                    await instance.changeRecovery(newRecoveryAddress, {from: randomAddress})
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to trow since a random address can't change the recovery address");
+
+            })
+
+    });
+
+});
+
 contract('AddressProxy', function (accounts) {
 
     it('correct addresses after deployment', function () {
@@ -173,42 +374,12 @@ contract('AddressProxy', function (accounts) {
             });
     });
 
-    it('unlock - should not be callable by owner', function () {
-        const owner = accounts[0];
-        const recoveryAddress = accounts[1];
+});
 
-        return AddressProxy
-            .new(owner, recoveryAddress)
-            .then(async function (instance) {
-
-                try {
-                    await instance.unlock({from: owner});
-                }catch (e) {
-                    assert.equal(e.message, "VM Exception while processing transaction: revert");
-                    return;
-                }
-
-                assert.fail("Expected that error is thrown when calling unlock with owner");
-
-            })
-
-    });
-
-    it('changeUser - should only be callable by recoveryAddress', function () {
-        assert.fail("Missing implementation")
-
-    });
-
-    it('changeRecoveryAddressAndUnlock - should only be callable by recoveryAddress', function () {
-        assert.fail("Missing implementation")
-    });
-
-    it('proxy - success with contract call and ether', function () {
-        assert.fail("Missing implementation")
-    });
+contract("AddressProxy - call forwarding", function (accounts) {
 
     //Test if the proxy
-    it('proxy - success with contract call', function () {
+    it('contract call', function () {
         const owner = accounts[0];
         const recoveryAddress = accounts[1];
 
@@ -238,6 +409,40 @@ contract('AddressProxy', function (accounts) {
             .catch(function (reason) {
                 throw reason;
             })
+    });
+
+    it('ether transfer in contract call', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return Promise
+            .all([
+                AddressProxy.new(owner, recoveryAddress),
+                TestToken.new()
+            ])
+            .then(async function (instances) {
+                const AddressProxy = instances[0];
+                const TestToken = instances[1];
+
+                //Data to execute
+                const dataToExecute = await TestToken.contract.buyTokens.getData(456);
+
+                //Make sure the test token contract has 0 wei
+                let testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(0, testTokenBalance.toNumber());
+
+                //Get some token's and pay for them
+                await AddressProxy.exec(TestToken.address, dataToExecute, {
+                    from: owner,
+                    value: 1
+                });
+
+                //Make sure that we payed for the token's
+                testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(1, testTokenBalance.toNumber());
+
+            })
+
     });
 
 });

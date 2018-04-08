@@ -9,6 +9,10 @@ contract TestToken {
         balances[msg.sender] = _amount;
     }
 
+    function buyTokens(uint256 _amount) external payable {
+        balances[msg.sender] = _amount;
+    }
+
     function balance(address _owner) public constant returns (uint256) {
         return balances[_owner];
     }
