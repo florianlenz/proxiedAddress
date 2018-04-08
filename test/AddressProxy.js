@@ -1,6 +1,161 @@
 const AddressProxy = artifacts.require("./AddressProxy.sol");
 const TestToken = artifacts.require("./TestToken.sol");
 
+contract('AddressProxy - lock', function (accounts) {
+
+    it('should be callable by recoveryAddress and owner', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                //lock should be callable by owner and recovery address
+                await instance.lock.call({from: owner});
+                await instance.lock.call({from: recoveryAddress});
+
+            });
+
+    });
+
+    it('should be callable by owner', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                //lock should be callable by owner
+                await instance.lock.call({from: owner});
+
+            });
+    });
+
+    it('should be callable by recovery address', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                //lock should be callable by owner
+                await instance.lock.call({from: recoveryAddress});
+
+            });
+    });
+
+    it('should NOT be callable by random address', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const randomAddress = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                //lock should be callable by owner
+                try {
+                    await instance.lock.call({from: randomAddress});
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to throw since a random address shouldn't be able to call lock");
+
+            });
+    });
+
+});
+
+contract('AddressProxy - exec', function (accounts) {
+
+    it('should only be callable by owner and recoveryAddress', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+        const randomAddress = accounts[2];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (proxyAddress) {
+
+                await proxyAddress.exec.call("", 0x0, {from: owner});
+                await proxyAddress.exec.call("", 0x0, {from: recoveryAddress});
+
+                try {
+                    await proxyAddress.exec.call("", 0x0, {from: randomAddress})
+                }catch (e){
+                    //We assert that the last proxy call is reverted since the random address
+                    //is not an owner and shouldn't have access to the exec method
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
+
+            })
+            .catch(function (error) {
+                throw error;
+            })
+
+    });
+
+    it('should not be callable by owner when locked', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                assert.isFalse(await instance.locked());
+                await instance.lock();
+                assert.isTrue(await instance.locked());
+
+                try {
+                    await instance.exec.call("", 0x0, {from: owner})
+                }catch (e){
+                    //Proxy call should be reverted
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
+
+            });
+    });
+
+    it('should not be callable by recoveryAddress when locked', function () {
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+
+                assert.isFalse(await instance.locked());
+                await instance.lock();
+                assert.isTrue(await instance.locked());
+
+                //call with recovery address should go through
+                try {
+                    await instance.exec.call("", 0x0, {from: recoveryAddress})
+                } catch (e){
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected the last proxyAddress.exec to throw since the proxy is locked");
+
+            });
+
+    });
+
+});
+
 contract('AddressProxy', function (accounts) {
 
     it('correct addresses after deployment', function () {
@@ -18,65 +173,24 @@ contract('AddressProxy', function (accounts) {
             });
     });
 
-    it('exec - should only be callable by owner and recoveryAddress', function () {
-        const owner = accounts[0];
-        const recoveryAddress = accounts[1];
-        const randomAddress = accounts[2];
-
-        return AddressProxy
-            .new(owner, recoveryAddress)
-            .then(async function (proxyAddress) {
-                await proxyAddress.exec.call("", 0x0, {from: owner});
-                await proxyAddress.exec.call("", 0x0, {from: recoveryAddress});
-                try {
-                    await proxyAddress.exec.call("", 0x0, {from: randomAddress})
-                }catch (e){
-                    //We assert that the last proxy call is reverted since the random address
-                    //is not an owner and shouldn't have access to the exec method
-                    assert.equal("VM Exception while processing transaction: revert", e.message);
-                    return;
-                }
-                assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
-            })
-            .catch(function (error) {
-                throw error;
-            })
-
-    });
-
-    it('exec - should not be callable by owner when locked', function () {
+    it('unlock - should not be callable by owner', function () {
         const owner = accounts[0];
         const recoveryAddress = accounts[1];
 
         return AddressProxy
             .new(owner, recoveryAddress)
             .then(async function (instance) {
-                expect(false, await instance.locked());
-                await instance.lock();
-                expect(true, await instance.locked());
+
                 try {
-                    await instance.exec.call("", 0x0, {from: owner})
-                }catch (e){
-                    //Proxy call should be reverted
-                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    await instance.unlock({from: owner});
+                }catch (e) {
+                    assert.equal(e.message, "VM Exception while processing transaction: revert");
                     return;
                 }
-                assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
-            });
-    });
 
-    it('exec - should be callable be recoveryAddress when locked', function () {
-        assert.fail("Missing implementation")
+                assert.fail("Expected that error is thrown when calling unlock with owner");
 
-    });
-
-    it('lock - should be callable by recoveryAddress', function () {
-        assert.fail("Missing implementation")
-
-    });
-
-    it('unlock - should only be callable by recoveryAddress', function () {
-        assert.fail("Missing implementation")
+            })
 
     });
 
