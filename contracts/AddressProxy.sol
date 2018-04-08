@@ -21,29 +21,51 @@ contract AddressProxy {
         _;
     }
 
+    /**
+    * @param _ownerAddress the address that "own" the proxy and interact with it most of the time
+    * @param _recoveryAddress this is the "master" address and can swap the owner address
+    */
     function AddressProxy(address _ownerAddress, address _recoveryAddress) public {
         ownerAddress = _ownerAddress;
         recoveryAddress = _recoveryAddress;
         locked = false;
     }
 
-    function exec(address location, bytes data) payable external auth() unlocked() returns(bool) {
-        require(location.call.value(msg.value)(data));
+    /**
+    * @param _location is the target contract address
+    * @param _data is "what" you want to execute on the target contact.
+    */
+    function exec(address _location, bytes _data) payable external auth() unlocked() returns(bool) {
+        require(_location.call.value(msg.value)(_data));
         return true;
     }
 
+    /**
+    * @dev lock's down the proxy and prevent the call of "exec" by ownerAddress and recoveryAddress
+    */
     function lock() external auth() {
         locked = true;
     }
 
+    /**
+    * @dev unlock's the proxy. Can only be done by recovery address
+    */
     function unlock() external onlyRecovery() {
         locked = false;
     }
 
+    /**
+    * @dev set new owner of proxy contract and remove the old one
+    * @param _newOwnerAddress new owner address
+    */
     function changeOwner(address _newOwnerAddress) external onlyRecovery() {
         ownerAddress = _newOwnerAddress;
     }
 
+    /**
+    * @dev Change the recovery address
+    * @param _recoveryAddress the new recovery address for this proxy
+    */
     function changeRecovery(address _recoveryAddress) external onlyRecovery() {
         recoveryAddress = _recoveryAddress;
     }
