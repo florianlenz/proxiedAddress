@@ -7,10 +7,11 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run truffle:test",
     "truffle:compile": "truffle compile",
     "truffle:migrate": "truffle migrate",
-    "truffle:test": "truffle test"
+    "truffle:test": "truffle test",
+    "rpc:start": "node_modules/.bin/ganache-cli --port=8098 --networkId=84893"
   },
   "repository": {
     "type": "git",
@@ -25,5 +26,8 @@
   "homepage": "https://github.com/florianlenz/proxiedAddress#readme",
   "dependencies": {
     "truffle": "^4.1.5"
+  },
+  "devDependencies": {
+    "ganache-cli": "^6.1.0"
   }
 }
