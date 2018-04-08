@@ -15,6 +15,7 @@
 - [License](#license)
 
 ## Security
+**This is currently alpha quality** use it at you own risk.
 
 ## Background
 When using ethereum and the blockchain at all you often use a private key to access your account. 
@@ -25,24 +26,19 @@ In case you lose your private key you can't prove that you married your partener
 This repo contain's an approach on how to address this issue.
 
 ## Install
-
-```
-//Install the dependencies
-npm install
-```
+Deploy the contract `contracts/AddressProxy.sol` with the tool you prefere (e.g. remix and metamask). 
 
 ## Usage
+You first need to deploy the `contracts/AddressProxy.sol`. 
+The first address should be the address of the private key you use in your daily live.
+The second address should be as secure as possible. You will always never need it (except to replace the current owner and the recovery address)
 
-```
-//Run test's
-npm run truffle:test
-
-//Compile the project
-npm run truffle:compile
-```
+You are now ready to use the proxy address. 
+For every state mutate interaction with smart contract's you need to get the [transaction data](https://github.com/ethereum/wiki/wiki/JavaScript-API#contract-methods) by calling the `getData` method on web3 contract instance.
+After you go the data, you just call the `exec` method of the address proxy with the address of the smart contract you want to interact with, and the data you got from the `getData` method. 
 
 ## API
-//@todo
+Please have a look at `contracts/AddressProxy.sol` in order to figure out how to interact with this contract.
 
 ## Maintainers
 
