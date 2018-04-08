@@ -11,6 +11,7 @@ contract('AddressProxy', function (accounts) {
             .then(async function (instance) {
                 assert.equal(owner, await instance.ownerAddress());
                 assert.equal(recoveryAddress, await instance.recoveryAddress());
+                assert.equal(false, await instance.locked());
             })
             .catch(function (reason) {
                 throw reason;
@@ -33,6 +34,7 @@ contract('AddressProxy', function (accounts) {
                     //We assert that the last proxy call is reverted since the random address
                     //is not an owner and shouldn't have access to the exec method
                     assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
                 }
                 assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
             })
@@ -43,20 +45,37 @@ contract('AddressProxy', function (accounts) {
     });
 
     it('exec - should not be callable by owner when locked', function () {
-        assert.fail("Missing implementation")
+        const owner = accounts[0];
+        const recoveryAddress = accounts[1];
+
+        return AddressProxy
+            .new(owner, recoveryAddress)
+            .then(async function (instance) {
+                expect(false, await instance.locked());
+                await instance.lock();
+                expect(true, await instance.locked());
+                try {
+                    await instance.exec.call("", 0x0, {from: owner})
+                }catch (e){
+                    //Proxy call should be reverted
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+                assert.fail("Expected the last proxyAddress.exec.call to fail since the random address is not an owner");
+            });
     });
 
-    it('exec - should be callable when recovery address', function () {
+    it('exec - should be callable be recoveryAddress when locked', function () {
         assert.fail("Missing implementation")
 
     });
 
-    it('lock - should only be callable by recoveryAddress', function () {
+    it('lock - should be callable by recoveryAddress', function () {
         assert.fail("Missing implementation")
 
     });
 
-    it('unlock - should only be callable by onlyRecovery', function () {
+    it('unlock - should only be callable by recoveryAddress', function () {
         assert.fail("Missing implementation")
 
     });
