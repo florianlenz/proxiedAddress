@@ -27,12 +27,12 @@ Or even more worst, someone can use your stolen private key to send a "divorce" 
 This repo contain's an approach on how to address this issue by delegating the "owning" of such contract's to a "proxyAddress" (technically another contract).
 Here are some graphics for better understanding.
 
-_Normal way_
+__Normal way__
 > This is the normal way. Your lose your private key = you lose access to the smart contract.
 
 ![GitHub Logo](assets/normal_way.png)
 
-_proxy address way_
+__Proxy Address Way__
 > This way you are NOT the owner of the agreement.
 > The agreement is owned by a proxy between you and the agreement.
 > BUT you have access to that proxy and can control it.
