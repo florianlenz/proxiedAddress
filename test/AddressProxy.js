@@ -607,3 +607,158 @@ contract("AddressProxy - execCustom", function(accounts) {
     })
 
 });
+
+contract("AddressProxy - sendEther", function (accounts) {
+
+    it("should be callable by client", function () {
+        const owner = accounts[0];
+        const client = accounts[1];
+        const receiver = accounts[4];
+
+        return AddressProxy
+            .new(owner, client)
+            .then(async function (instance) {
+
+                //Send some eth to contract
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: instance.address,
+                    value: 100
+                });
+
+                assert.equal(100, await web3.eth.getBalance(instance.address).toString(10));
+
+                //Transfer some ether from proxy address to
+                await instance.sendEther(receiver, 50, {
+                    from: client
+                });
+
+                assert.equal(50, await web3.eth.getBalance(instance.address).toString(10));
+
+            });
+    });
+
+    it("should be callable by owner", function () {
+        const owner = accounts[0];
+        const client = accounts[1];
+        const receiver = accounts[4];
+
+        return AddressProxy
+            .new(owner, client)
+            .then(async function (instance) {
+
+                //Send some eth to contract
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: instance.address,
+                    value: 100
+                });
+
+                assert.equal(100, await web3.eth.getBalance(instance.address).toString(10));
+
+                //Transfer some ether from proxy address to
+                await instance.sendEther(receiver, 50, {
+                    from: owner
+                });
+
+                assert.equal(50, await web3.eth.getBalance(instance.address).toString(10));
+
+            });
+    });
+
+    it("should't be callable by random address", function () {
+        const owner = accounts[0];
+        const client = accounts[1];
+        const receiver = accounts[4];
+        const randomAddress = accounts[6];
+
+        return AddressProxy
+            .new(owner, client)
+            .then(async function (instance) {
+
+                //Send some eth to contract
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: instance.address,
+                    value: 100
+                });
+
+                assert.equal(100, await web3.eth.getBalance(instance.address).toString(10));
+
+                try {
+                    //Transfer some ether from proxy address to
+                    await instance.sendEther(receiver, 50, {
+                        from: randomAddress
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to trow since a random address can't change the recovery address");
+
+            });
+    });
+
+    it("should be callable when locked", function () {
+        const owner = accounts[0];
+        const client = accounts[1];
+        const receiver = accounts[4];
+        const randomAddress = accounts[6];
+
+        return AddressProxy
+            .new(owner, client)
+            .then(async function (instance) {
+
+                //Send some eth to contract
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: instance.address,
+                    value: 100
+                });
+
+                assert.equal(100, await web3.eth.getBalance(instance.address).toString(10));
+
+                try {
+                    //Transfer some ether from proxy address to
+                    await instance.sendEther(receiver, 50, {
+                        from: owner
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                }
+
+                try {
+                    //Transfer some ether from proxy address to
+                    await instance.sendEther(receiver, 50, {
+                        from: client
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                }
+
+                try {
+                    //Transfer some ether from proxy address to
+                    await instance.sendEther(receiver, 50, {
+                        from: receiver
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                }
+
+                try {
+                    //Transfer some ether from proxy address to
+                    await instance.sendEther(receiver, 50, {
+                        from: randomAddress
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to trow since a random address can't change the recovery address");
+
+            });
+    })
+
+});
