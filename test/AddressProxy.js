@@ -344,12 +344,7 @@ contract('AddressProxy - changeClient', function (accounts) {
             .then(async function (instance) {
 
                 try {
-                    await instance.changeClient
-
-
-
-
-                    (newClient, {from: randomAddress})
+                    await instance.changeClient(newClient, {from: randomAddress})
                 } catch (e) {
                     assert.equal("VM Exception while processing transaction: revert", e.message);
                     return;
@@ -419,11 +414,11 @@ contract("AddressProxy - call forwarding", function (accounts) {
 
     it('ether transfer in contract call', function () {
         const owner = accounts[0];
-        const recoveryAddress = accounts[1];
+        const client = accounts[1];
 
         return Promise
             .all([
-                AddressProxy.new(owner, recoveryAddress),
+                AddressProxy.new(owner, client),
                 TestToken.new()
             ])
             .then(async function (instances) {
@@ -450,5 +445,165 @@ contract("AddressProxy - call forwarding", function (accounts) {
             })
 
     });
+
+});
+
+contract("AddressProxy - execCustom", function(accounts) {
+
+    it('should be callable by owner', function(){
+        const owner = accounts[0];
+        const client = accounts[1];
+
+        return Promise
+            .all([
+                AddressProxy.new(owner, client),
+                TestToken.new()
+            ])
+            .then(async function (instances) {
+                const AddressProxy = instances[0];
+                const TestToken = instances[1];
+
+                //Data to execute
+                const dataToExecute = await TestToken.contract.buyTokens.getData(456);
+
+                //Make sure the test token contract has 0 wei
+                let testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(0, testTokenBalance.toNumber());
+
+                //Get some token's and pay for them with 3 wei
+                await AddressProxy.execCustom(TestToken.address, dataToExecute, 3, 100000000000000000000000, {
+                    from: owner,
+                    value: 100,
+                    gas: 100000
+                });
+
+                //Make sure that we payed for the token's with 3 wei
+                testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(3, testTokenBalance.toNumber());
+
+            })
+    });
+
+    it('should be callable by client', function(){
+        const owner = accounts[0];
+        const client = accounts[1];
+
+        return Promise
+            .all([
+                AddressProxy.new(owner, client),
+                TestToken.new()
+            ])
+            .then(async function (instances) {
+                const AddressProxy = instances[0];
+                const TestToken = instances[1];
+
+                //Data to execute
+                const dataToExecute = await TestToken.contract.buyTokens.getData(456);
+
+                //Make sure the test token contract has 0 wei
+                let testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(0, testTokenBalance.toNumber());
+
+                //Get some token's and pay for them with 3 wei
+                await AddressProxy.execCustom(TestToken.address, dataToExecute, 34, 100000000000000000000000, {
+                    from: client,
+                    value: 100,
+                    gas: 100000
+                });
+
+                //Make sure that we payed for the token's with 34 wei
+                testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(34, testTokenBalance.toNumber());
+
+            })
+    });
+
+    it("shouldn't be callable by random address", function(){
+        const owner = accounts[0];
+        const client = accounts[1];
+        const randomAddress = accounts[8];
+
+        return Promise
+            .all([
+                AddressProxy.new(owner, client),
+                TestToken.new()
+            ])
+            .then(async function (instances) {
+                const AddressProxy = instances[0];
+                const TestToken = instances[1];
+
+                //Data to execute
+                const dataToExecute = await TestToken.contract.buyTokens.getData(456);
+
+                //Make sure the test token contract has 0 wei
+                let testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(0, testTokenBalance.toNumber());
+
+                try {
+                    await AddressProxy.execCustom(TestToken.address, dataToExecute, 35, 100000000000000000000000, {
+                        from: randomAddress,
+                        value: 100,
+                        gas: 100000
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to trow since a random address can't change the recovery address");
+
+            })
+
+    });
+
+    it("shouldn't be callable when locked", function () {
+        const owner = accounts[0];
+        const client = accounts[1];
+
+        return Promise
+            .all([
+                AddressProxy.new(owner, client),
+                TestToken.new()
+            ])
+            .then(async function (instances) {
+                const AddressProxy = instances[0];
+                const TestToken = instances[1];
+
+                //Lock proxy down
+                AddressProxy.lock();
+                assert.isTrue(await AddressProxy.locked());
+
+                //Data to execute
+                const dataToExecute = await TestToken.contract.buyTokens.getData(456);
+
+                //Make sure the test token contract has 0 wei
+                let testTokenBalance = await web3.eth.getBalance(TestToken.address);
+                assert.equal(0, testTokenBalance.toNumber());
+
+                try {
+                    await AddressProxy.execCustom(TestToken.address, dataToExecute, 35, 100000000000000000000000, {
+                        from: owner,
+                        value: 100,
+                        gas: 100000
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                }
+
+                try {
+                    await AddressProxy.execCustom(TestToken.address, dataToExecute, 35, 100000000000000000000000, {
+                        from: client,
+                        value: 100,
+                        gas: 100000
+                    });
+                } catch (e) {
+                    assert.equal("VM Exception while processing transaction: revert", e.message);
+                    return;
+                }
+
+                assert.fail("Expected to trow since a random address can't change the recovery address");
+
+            })
+    })
 
 });

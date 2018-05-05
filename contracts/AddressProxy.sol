@@ -81,7 +81,7 @@ contract AddressProxy {
     * @param _value how much ether should be transferred (in wei)
     * @param _gas the amount of gas in wei
     */
-    function execCustom(address _location, bytes _data, uint256 _value, uint256 _gas) external auth() isUnlocked() {
+    function execCustom(address _location, bytes _data, uint256 _value, uint256 _gas) payable external auth() isUnlocked() {
         require(_location.call.value(_value).gas(_gas)(_data));
     }
 
