@@ -1,5 +1,7 @@
 pragma solidity ^0.4.17;
 
+import "./ERC20Interface.sol";
+
 contract AddressProxy {
 
     /**
@@ -54,6 +56,23 @@ contract AddressProxy {
     */
     function exec(address _location, bytes _data) payable external auth() isUnlocked() {
         require(_location.call.value(msg.value)(_data));
+    }
+
+    /**
+    * @param _to the address to where you want to send ether
+    * @param _amount the amount of ether you want to send IN WEI
+    */
+    function sendEther(address _to, uint _amount) external auth() isUnlocked() {
+        _to.transfer(_amount);
+    }
+
+    /**
+    * @param _tokenContract the token contract from which you want to transfer tokens
+    * @param _to the address where you want to send those token's
+    * @param _amount the amount of token's you want to transfer
+    */
+    function transferERC20Token(ERC20Interface _tokenContract, address _to, uint _amount) external auth() isUnlocked() {
+        require(_tokenContract.transfer(_to, _amount));
     }
 
     /**
