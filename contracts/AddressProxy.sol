@@ -1,7 +1,5 @@
 pragma solidity ^0.4.17;
 
-import "./ERC20Interface.sol";
-
 contract AddressProxy {
 
     /**
@@ -65,7 +63,7 @@ contract AddressProxy {
     function sendEther(address _to, uint _amount) external auth() isUnlocked() {
         _to.transfer(_amount);
     }
-    
+
     /**
     * @param _location is the target contract address
     * @param _data is "what" you want to execute on the target contract
