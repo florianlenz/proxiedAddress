@@ -1,4 +1,4 @@
-pragma solidity ^0.4.17;
+pragma solidity ^0.4.22;
 
 contract AddressProxy {
 
@@ -21,7 +21,7 @@ contract AddressProxy {
     * @param _owner the address that "own" the proxy and interact with it most of the time
     * @param _client this is the "master" address and can swap the client address
     */
-    function AddressProxy(address _owner, address _client) public {
+    constructor(address _owner, address _client) public {
         owner = _owner;
         client = _client;
         locked = false;
@@ -50,10 +50,11 @@ contract AddressProxy {
 
     /**
     * @param _location is the target contract address
-    * @param _data is "what" you want to execute on the target contact.
+    * @param _data is "what" you want to execute on the target contract
+    * @param _ether the amount of ether to send with the execution (IN WEI)
     */
-    function exec(address _location, bytes _data) payable external auth() isUnlocked() {
-        require(_location.call.value(msg.value)(_data));
+    function exec(address _location, bytes _data, uint256 _ether) payable external auth() isUnlocked() {
+        require(_location.call.value(_ether)(_data));
     }
 
     /**

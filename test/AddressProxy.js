@@ -82,11 +82,11 @@ contract('AddressProxy - exec', function (accounts) {
             .new(owner, client)
             .then(async function (proxyAddress) {
 
-                await proxyAddress.exec.call("", 0x0, {from: owner});
-                await proxyAddress.exec.call("", 0x0, {from: client});
+                await proxyAddress.exec.call("", 0x0, 0, {from: owner});
+                await proxyAddress.exec.call("", 0x0, 0, {from: client});
 
                 try {
-                    await proxyAddress.exec.call("", 0x0, {from: randomAddress})
+                    await proxyAddress.exec.call("", 0x0, 0, {from: randomAddress})
                 }catch (e){
                     //We assert that the last proxy call is reverted since the random address
                     //is not an owner and shouldn't have access to the exec method
@@ -116,7 +116,7 @@ contract('AddressProxy - exec', function (accounts) {
                 assert.isTrue(await instance.locked());
 
                 try {
-                    await instance.exec.call("", 0x0, {from: owner})
+                    await instance.exec.call("", 0x0, 0, {from: owner})
                 }catch (e){
                     //Proxy call should be reverted
                     assert.equal("VM Exception while processing transaction: revert", e.message);
@@ -142,7 +142,7 @@ contract('AddressProxy - exec', function (accounts) {
 
                 //call with recovery address should go through
                 try {
-                    await instance.exec.call("", 0x0, {from: client})
+                    await instance.exec.call("", 0x0, 0, {from: client})
                 } catch (e){
                     assert.equal("VM Exception while processing transaction: revert", e.message);
                     return;
@@ -398,7 +398,7 @@ contract("AddressProxy - call forwarding", function (accounts) {
                 const dataToExecute = await TestToken.contract.createTokens.getData(100);
 
                 //Execute the transaction
-                await AddressProxy.exec(TestToken.address, dataToExecute);
+                await AddressProxy.exec(TestToken.address, dataToExecute, 0);
 
                 let proxyBalance = await TestToken.balance(AddressProxy.address);
 
@@ -425,6 +425,13 @@ contract("AddressProxy - call forwarding", function (accounts) {
                 const AddressProxy = instances[0];
                 const TestToken = instances[1];
 
+                //Send eth to proxy address
+                await web3.eth.sendTransaction({
+                    from: owner,
+                    to: AddressProxy.address,
+                    value: 5
+                });
+
                 //Data to execute
                 const dataToExecute = await TestToken.contract.buyTokens.getData(456);
 
@@ -433,14 +440,13 @@ contract("AddressProxy - call forwarding", function (accounts) {
                 assert.equal(0, testTokenBalance.toNumber());
 
                 //Get some token's and pay for them
-                await AddressProxy.exec(TestToken.address, dataToExecute, {
+                await AddressProxy.exec(TestToken.address, dataToExecute, 5, {
                     from: owner,
-                    value: 1
                 });
 
                 //Make sure that we payed for the token's
                 testTokenBalance = await web3.eth.getBalance(TestToken.address);
-                assert.equal(1, testTokenBalance.toNumber());
+                assert.equal(5, testTokenBalance.toNumber());
 
             })
 
